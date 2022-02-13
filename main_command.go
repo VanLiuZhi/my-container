@@ -13,7 +13,7 @@ var runCommand = cli.Command{
 	Flags: []cli.Flag{
 		cli.BoolFlag{
 			Name:  "ti",
-			Usage: "enable tty",
+			Usage: "enable tty(类型docker的 -ti)",
 		},
 	},
 	Action: func(ctx *cli.Context) error {

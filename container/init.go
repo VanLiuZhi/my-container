@@ -7,7 +7,7 @@ import (
 )
 
 func RunContainerInitProcess(cmd string, args []string) error {
-	log.Info("command %s", cmd)
+	log.Infof("进入RunContainerInitProcess, command %s", cmd)
 	// Systemd 加入linux之后, mount namespace 就变成 shared by default, 所以你必须显示
 	// 声明你要这个新的mount namespace独立。
 	// 具体细节参考namespace关于mount的描述

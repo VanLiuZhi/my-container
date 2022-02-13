@@ -9,6 +9,8 @@ import (
 )
 
 func main() {
+	// ./main run sh
+	// 0 是 ./main , 取1 是 run
 	switch os.Args[1] {
 	case "run":
 		parent()
@@ -20,7 +22,10 @@ func main() {
 }
 
 func parent() {
-	cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
+	// ./main run sh
+	fmt.Println("参数为：", append([]string{"child"}, os.Args[2:]...))
+	//cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
+	cmd := exec.Command("/proc/self/exe", "child31", "sh")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWUTS |
 			syscall.CLONE_NEWPID | syscall.CLONE_NEWNS |
@@ -30,10 +35,10 @@ func parent() {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if err := cmd.Run(); err != nil {
-		fmt.Println("ERROR", err)
-		os.Exit(1)
-	}
+	//if err := cmd.Run(); err != nil {
+	//	fmt.Println("ERROR", err)
+	//	os.Exit(1)
+	//}
 }
 
 func child() {

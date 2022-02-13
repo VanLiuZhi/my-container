@@ -1,21 +1,20 @@
 package main
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
 	"my-container/container"
 	"os"
 )
 
 func Run(tty bool, command string) {
 	parent := container.NewParentProcess(tty, command)
-	//err := parent.Start()
-	//if err != nil {
-	//	log.Error(err)
-	//}
-	err := parent.Run()
-	if err != nil {
-		fmt.Println("ERROR", err)
-		os.Exit(1)
+	if err := parent.Start(); err != nil {
+		log.Error("返回配置好的command对象发生异常")
+		log.Error(err)
 	}
-	//os.Exit(-1)
+	err := parent.Wait()
+	if err != nil {
+		log.Error("执行Run命令失败, ERROR:", err)
+	}
+	os.Exit(1)
 }

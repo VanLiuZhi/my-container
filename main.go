@@ -6,7 +6,7 @@ import (
 )
 import log "github.com/sirupsen/logrus"
 
-const usage = `my docker`
+const usage = `my docker(一个类docker的demo)`
 
 func main() {
 	app := cli.NewApp()
@@ -26,6 +26,7 @@ func main() {
 
 	err := app.Run(os.Args)
 	if err != nil {
+		log.Errorf("运行失败，即将打印错误栈日志")
 		log.Fatal(err)
 	}
 }
