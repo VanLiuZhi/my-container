@@ -1,3 +1,10 @@
+/*
+@Time :    2022/2/17 23:04
+@Author :  liuzhi
+@File :    init
+@Software: GoLand
+*/
+
 package container
 
 import (
@@ -19,6 +26,7 @@ func RunContainerInitProcess(cmd string, args []string) error {
 		return err
 	}
 	argv := []string{cmd}
+	// 相当于执行内核的 execve 系统调用
 	if err := syscall.Exec(cmd, argv, os.Environ()); err != nil {
 		log.Error(err.Error())
 	}

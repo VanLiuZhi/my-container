@@ -1,3 +1,10 @@
+/*
+@Time :    2022/2/17 23:04
+@Author :  liuzhi
+@File :    container_process
+@Software: GoLand
+*/
+
 package container
 
 import (
@@ -15,6 +22,7 @@ func NewParentProcess(tty bool, command string) *exec.Cmd {
 		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID |
 			syscall.CLONE_NEWNS | syscall.CLONE_NEWNET | syscall.CLONE_NEWIPC,
 	}
+	// 重定向到标准流
 	if tty {
 		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout

@@ -1,7 +1,15 @@
+/*
+@Time :    2022/2/17 23:04
+@Author :  liuzhi
+@File :    main
+@Software: GoLand
+*/
+
 package main
 
 import (
 	"github.com/urfave/cli"
+	"my-container/wheel"
 	"os"
 )
 import log "github.com/sirupsen/logrus"
@@ -14,8 +22,8 @@ func main() {
 	app.Usage = usage
 
 	app.Commands = []cli.Command{
-		runCommand,
-		initCommand,
+		wheel.RunCommand,
+		wheel.InitCommand,
 	}
 
 	app.Before = func(context *cli.Context) error {

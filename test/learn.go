@@ -24,7 +24,7 @@ func main() {
 func parent() {
 	// ./main run sh
 	fmt.Println("参数为：", append([]string{"child"}, os.Args[2:]...))
-	//cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
+	// cmd := exec.Command("/proc/self/exe", append([]string{"child"}, os.Args[2:]...)...)
 	cmd := exec.Command("/proc/self/exe", "child31", "sh")
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWUTS |
@@ -34,11 +34,6 @@ func parent() {
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-
-	//if err := cmd.Run(); err != nil {
-	//	fmt.Println("ERROR", err)
-	//	os.Exit(1)
-	//}
 }
 
 func child() {

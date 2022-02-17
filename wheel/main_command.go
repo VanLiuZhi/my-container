@@ -1,4 +1,11 @@
-package main
+/*
+@Time :    2022/2/17 23:04
+@Author :  liuzhi
+@File :    main_command
+@Software: GoLand
+*/
+
+package wheel
 
 import (
 	"fmt"
@@ -7,7 +14,7 @@ import (
 	"my-container/container"
 )
 
-var runCommand = cli.Command{
+var RunCommand = cli.Command{
 	Name:  "run",
 	Usage: `Create a container`,
 	Flags: []cli.Flag{
@@ -29,7 +36,7 @@ var runCommand = cli.Command{
 	},
 }
 
-var initCommand = cli.Command{
+var InitCommand = cli.Command{
 	Name:  "init",
 	Usage: "Init container",
 	Action: func(ctx *cli.Context) error {
