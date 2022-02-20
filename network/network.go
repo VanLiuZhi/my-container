@@ -8,6 +8,7 @@
 package network
 
 import (
+	log "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"net"
 )
@@ -19,7 +20,45 @@ type Network struct {
 	Driver  string     // 网络驱动名
 }
 
+// Endpoint 网络端点
 type Endpoint struct {
-	ID     string `json:"id"`
-	Device netlink.Veth
+	ID          string           `json:"id"`
+	Device      netlink.Veth     `json:"dev"`
+	IPAddress   net.IP           `json:"ip"`
+	MacAddress  net.HardwareAddr `json:"mac"`
+	PortMapping []string         `json:"portMapping"`
+	Network     *Network
+}
+
+// 定义网络驱动的接口
+type NetworkDriver interface {
+	// Name 驱动名
+	Name() string
+
+	// Create 创建网络
+	Create(subnet string, name string) (*Network, error)
+
+	// Delete 删除网络
+	Delete(network Network) error
+
+	// Connect 连接容器端点到网络
+	Connect(network *Network, endpoint *Endpoint) error
+
+	// Disconnect 移除连接端点
+	Disconnect(network Network, endpoint *Endpoint) error
+}
+
+func CreateNetwork(driver, subnet, name string) error {
+	// 通过 ParseCIDR 转换网段字符串
+	// For example, ParseCIDR("192.0.2.1/24") returns the IP address
+	// 192.0.2.1 and the network 192.0.2.0/24.
+	cidr, ipNet, err := net.ParseCIDR(subnet)
+	if err != nil {
+		panic("subnet 参数非法")
+	}
+	log.Debug("网络转换：cidr -> ", cidr)
+	log.Debug("网络转换：ipNet -> ", ipNet)
+	// 把wan'du
+	allocator, err := ipAllocator.Allocator(ipNet)
+
 }

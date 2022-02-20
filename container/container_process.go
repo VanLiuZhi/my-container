@@ -14,9 +14,10 @@ import (
 	"syscall"
 )
 
+// NewParentProcess 创建一个 cmd 设置参数
 func NewParentProcess(tty bool, command string) *exec.Cmd {
 	args := []string{"init", command}
-	log.Info("执行参数为：", args)
+	log.Debug("执行参数为：", args)
 	cmd := exec.Command("/proc/self/exe", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Cloneflags: syscall.CLONE_NEWUTS | syscall.CLONE_NEWPID |
