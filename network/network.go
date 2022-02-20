@@ -21,6 +21,7 @@ type Network struct {
 }
 
 // Endpoint 网络端点
+// tips Go json对象在定义的时候，要声明成员变量是大写才能导出，也就是才会被序列化，可以指定序列化后的名称，一般就是转回驼峰或重写名称
 type Endpoint struct {
 	ID          string           `json:"id"`
 	Device      netlink.Veth     `json:"dev"`
@@ -30,8 +31,8 @@ type Endpoint struct {
 	Network     *Network
 }
 
-// 定义网络驱动的接口
-type NetworkDriver interface {
+// NetDriver 定义网络驱动的接口
+type NetDriver interface {
 	// Name 驱动名
 	Name() string
 
@@ -58,7 +59,12 @@ func CreateNetwork(driver, subnet, name string) error {
 	}
 	log.Debug("网络转换：cidr -> ", cidr)
 	log.Debug("网络转换：ipNet -> ", ipNet)
-	// 把wan'du
-	allocator, err := ipAllocator.Allocator(ipNet)
+	// 通过IPAM组件分配IP，获取网段中的第一个IP作为网关的IP
+	gatewayIp, err := ipAllocator.Allocator(ipNet)
+	if err != nil {
+		return err
+	}
+	ipNet.IP = gatewayIp
 
+	return nil
 }
