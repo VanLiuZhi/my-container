@@ -31,12 +31,12 @@ var ipAllocator = &IPAM{
 	SubnetAllocatorPath: ipamDefaultAllocatorPath,
 }
 
-func (ipam *IPAM) ExternalLoad() (*IPAM, error) {
+func (ipam *IPAM) ExternalLoadByTest() (*IPAM, error) {
 	_ = ipam.load()
 	return ipam, nil
 }
 
-// 定义加载配置文件方法
+// 加载配置
 func (ipam *IPAM) load() error {
 	// 通过 os.Stat 返回一个描述文件信息的 FileInfo 对象
 	// 类似通过 ls -al 这样能查看文件的信息将其包装在FileInfo，比如判断这个文件是是不是一个 dir
@@ -76,6 +76,7 @@ func (ipam *IPAM) load() error {
 	return nil
 }
 
+// 转储配置
 func (ipam *IPAM) dump() error {
 	// 解析配置文件路径，目录不存在就创建一个新的
 	ipamConfigFileDir, _ := path.Split(ipam.SubnetAllocatorPath)
@@ -110,7 +111,7 @@ func (ipam *IPAM) dump() error {
 	return nil
 }
 
-// Allocator 分配
+// Allocator 分配ip
 func (ipam *IPAM) Allocator(subnet *net.IPNet) (ip net.IP, err error) {
 	// 定义存放网段信息的map(在实例化结构体的时候没初始化对象，这里处理)
 	ipam.Subnets = &map[string]string{}
@@ -131,6 +132,7 @@ func (ipam *IPAM) Allocator(subnet *net.IPNet) (ip net.IP, err error) {
 			ipAlloc := []byte((*ipam.Subnets)[subnet.String()])
 			ipAlloc[c] = '1'
 			(*ipam.Subnets)[subnet.String()] = string(ipAlloc)
+			// 赋值返回值ip
 			ip = subnet.IP
 			for t := uint(4); t > 0; t -= 1 {
 				[]byte(ip)[4-t] += uint8(c >> ((t - 1) * 8))
@@ -140,13 +142,10 @@ func (ipam *IPAM) Allocator(subnet *net.IPNet) (ip net.IP, err error) {
 		}
 	}
 	_ = ipam.dump()
-	// TODO 没有返回IP
-	// if err != nil {
-	// 	return nil, err
-	// }
 	return
 }
 
+// Release 释放分配的IP
 func (ipam *IPAM) Release(subnet *net.IPNet, ipaddr *net.IP) error {
 	ipam.Subnets = &map[string]string{}
 

@@ -30,7 +30,7 @@ func TestAllocateSubnetJsonLoad(t *testing.T) {
 		SubnetAllocatorPath: "./subnet.json",
 		Subnets:             &map[string]string{},
 	}
-	load, _ := ipam.ExternalLoad()
+	load, _ := ipam.ExternalLoadByTest()
 	fmt.Println(load.Subnets)
 	fmt.Println((*load.Subnets)["ip"])
 }
@@ -40,7 +40,7 @@ func TestAllocateSetDefaultSubnet(t *testing.T) {
 		SubnetAllocatorPath: "./subnet.json",
 		Subnets:             &map[string]string{},
 	}
-	_, _ = ipam.ExternalLoad()
+	_, _ = ipam.ExternalLoadByTest()
 	_, subnet, _ := net.ParseCIDR("192.168.1.100/24")
 	size, bits := subnet.Mask.Size()
 	(*ipam.Subnets)[subnet.String()] = strings.Repeat("0", 1<<uint8(bits-size))
