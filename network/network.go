@@ -9,16 +9,23 @@ package network
 
 import (
 	"encoding/json"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
+	"my-container/container"
+	"my-container/network/wheel"
 	"net"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
+	"text/tabwriter"
 )
 
 var (
 	defaultNetworkPath = "/var/run/my-container/network/"
 	drivers            = map[string]NetDriver{}
+	networks           = map[string]*Network{}
 )
 
 // Network 定义网络基本模型
@@ -37,24 +44,6 @@ type Endpoint struct {
 	MacAddress  net.HardwareAddr `json:"mac"`
 	PortMapping []string         `json:"portMapping"`
 	Network     *Network
-}
-
-// NetDriver 定义网络驱动的接口
-type NetDriver interface {
-	// Name 驱动名
-	Name() string
-
-	// Create 创建网络
-	Create(subnet string, name string) (*Network, error)
-
-	// Delete 删除网络
-	Delete(network Network) error
-
-	// Connect 连接容器端点到网络
-	Connect(network *Network, endpoint *Endpoint) error
-
-	// Disconnect 移除连接端点
-	Disconnect(network Network, endpoint *Endpoint) error
 }
 
 func (net *Network) dump(dumpPath string) error {
@@ -123,11 +112,13 @@ func (net *Network) load(dumpPath string) error {
 			log.Error("file close error")
 		}
 	}(netConfigFile)
+
 	netJson := make([]byte, 3000)
 	read, err := netConfigFile.Read(netJson)
 	if err != nil {
 		return err
 	}
+
 	err = json.Unmarshal(netJson[:read], net)
 	if err != nil {
 		log.Errorf("error load netConfigFile info：%v", err)
@@ -136,25 +127,127 @@ func (net *Network) load(dumpPath string) error {
 	return nil
 }
 
+// CreateNetwork 创建网络
 func CreateNetwork(driver, subnet, name string) error {
 	// 通过 ParseCIDR 转换网段字符串
 	// For example, ParseCIDR("192.0.2.1/24") returns the IP address
 	// 192.0.2.1 and the network 192.0.2.0/24.
-	cidr, ipNet, err := net.ParseCIDR(subnet)
+	ip, cidr, err := net.ParseCIDR(subnet)
 	if err != nil {
 		panic("subnet 参数非法")
 	}
-	log.Debug("网络转换：ip -> ", cidr)
-	log.Debug("网络转换：ipNet -> ", ipNet)
+	log.Debug("网络转换：ip -> ", ip)
+	log.Debug("网络转换：cidr -> ", cidr)
 	// 通过IPAM组件分配IP，获取网段中的第一个IP作为网关的IP
-	gatewayIp, err := ipAllocator.Allocator(ipNet)
+	gatewayIp, err := ipAllocator.Allocator(cidr)
 	if err != nil {
 		return err
 	}
-	ipNet.IP = gatewayIp
-	network, err := drivers[driver].Create(ipNet.String(), name)
+	// cidr 由 { IP，Mask } 两个成员变量组成
+	cidr.IP = gatewayIp
+	network, err := drivers[driver].Create(cidr.String(), name)
 	if err != nil {
 		return err
 	}
+	// 保存网络配置，方便后续查询网络端点信息，数据保存在文件中
 	return network.dump(defaultNetworkPath)
+}
+
+// Connect 连接网络，相当于把veth设备挂到Linux Bridge网桥上
+func Connect(networkName string, containerInfo *container.ContainerInfo) error {
+	network, ok := networks[networkName]
+	if !ok {
+		return fmt.Errorf("network %s not found", networkName)
+	}
+	// 分配容器IP地址
+	ip, err := ipAllocator.Allocator(network.IpRange)
+	if err != nil {
+		log.Error("调用 Connect, ip 分配失败")
+		return err
+	}
+	// 创建网络端点
+	endpoint := &Endpoint{
+		ID:          fmt.Sprintf("%s-%s", containerInfo.Id, networkName),
+		IPAddress:   ip,
+		Network:     network,
+		PortMapping: containerInfo.PortMapping,
+	}
+	// 调用网络驱动 挂载和配置网络端点
+	if err = drivers[network.Driver].Connect(network, endpoint); err != nil {
+		return err
+	}
+	// 在容器的 namespace 中配置网络设备的IP地址
+	if err = wheel.ConfigEndpointIpAddressAndRoute(endpoint, containerInfo); err != nil {
+		return err
+	}
+	// 配置容器到端口的主机端口的映射
+	return wheel.ConfigPortMapping(endpoint, containerInfo)
+
+}
+
+func DeleteNetwork(networkName string) error {
+	nw, ok := networks[networkName]
+	if !ok {
+		return fmt.Errorf("no Such Network: %s", networkName)
+	}
+
+	if err := ipAllocator.Release(nw.IpRange, &nw.IpRange.IP); err != nil {
+		return fmt.Errorf("error Remove Network gateway ip: %s", err)
+	}
+
+	if err := drivers[nw.Driver].Delete(*nw); err != nil {
+		return fmt.Errorf("error Remove Network DriverError: %s", err)
+	}
+
+	return nw.remove(defaultNetworkPath)
+}
+
+func Init() error {
+	var bridgeDriver = BridgeNetworkDriver{}
+	drivers[bridgeDriver.Name()] = nil
+
+	if _, err := os.Stat(defaultNetworkPath); err != nil {
+		if os.IsNotExist(err) {
+			_ = os.MkdirAll(defaultNetworkPath, 0644)
+		} else {
+			return err
+		}
+	}
+
+	_ = filepath.Walk(defaultNetworkPath, func(nwPath string, info os.FileInfo, err error) error {
+		if strings.HasSuffix(nwPath, "/") {
+			return nil
+		}
+		_, nwName := path.Split(nwPath)
+		nw := &Network{
+			Name: nwName,
+		}
+
+		if err := nw.load(nwPath); err != nil {
+			log.Errorf("error load network: %s", err)
+		}
+
+		networks[nwName] = nw
+		return nil
+	})
+
+	log.Infof("networks: %v", networks)
+
+	return nil
+}
+
+func ListNetwork() {
+	w := tabwriter.NewWriter(os.Stdout, 12, 1, 3, ' ', 0)
+	_, _ = fmt.Fprint(w, "NAME\tIpRange\tDriver\n")
+	for _, nw := range networks {
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n",
+			nw.Name,
+			nw.IpRange.String(),
+			nw.Driver,
+		)
+	}
+	if err := w.Flush(); err != nil {
+		log.Errorf("Flush error %v", err)
+		return
+	}
 }

@@ -35,6 +35,10 @@ func TestAllocateSubnetJsonLoad(t *testing.T) {
 	fmt.Println((*load.Subnets)["ip"])
 }
 
+func TestName(t *testing.T) {
+	fmt.Println("test code")
+}
+
 func TestAllocateSetDefaultSubnet(t *testing.T) {
 	ipam := &network.IPAM{
 		SubnetAllocatorPath: "./subnet.json",

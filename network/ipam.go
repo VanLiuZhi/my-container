@@ -57,6 +57,7 @@ func (ipam *IPAM) load() error {
 			log.Debug("file close error")
 		}
 	}(subnetConfigFile)
+
 	if err != nil {
 		return err
 	}
