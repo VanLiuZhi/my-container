@@ -13,6 +13,10 @@
 
   操作网络接口，路由表配置的库。提供了Linux下ip命令
 
+- github.com/vishvananda/netns
+
+  操作网络命名空间
+
 ## 创建网络
 
 mydocker network create --subnet 192.168.0.0/24 --driver bridge testbridgenet
@@ -20,3 +24,13 @@ mydocker network create --subnet 192.168.0.0/24 --driver bridge testbridgenet
 ## 指定容器网络
 
 mydocker run -ti -p 80 : 80 --net testbridgenet xxxx
+
+## 补充
+
+Linux 虚拟网络设备 veth-pair
+
+Linux bridge
+
+Linux 路由表
+
+Linux iptables

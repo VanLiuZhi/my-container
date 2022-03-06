@@ -13,7 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 	"my-container/container"
-	"my-container/network/wheel"
 	"net"
 	"os"
 	"path"
@@ -55,7 +54,7 @@ func (net *Network) dump(dumpPath string) error {
 			return err
 		}
 	}
-	// 打开文件
+	// 打开文件 模式：参数分别是存在内容则消空、只写入、不存在则创建
 	newPath := path.Join(dumpPath, net.Name)
 	nwFile, err := os.OpenFile(newPath, os.O_TRUNC|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
@@ -155,6 +154,7 @@ func CreateNetwork(driver, subnet, name string) error {
 
 // Connect 连接网络，相当于把veth设备挂到Linux Bridge网桥上
 func Connect(networkName string, containerInfo *container.ContainerInfo) error {
+	// 从 dict 中获取容器的网络连接信息
 	network, ok := networks[networkName]
 	if !ok {
 		return fmt.Errorf("network %s not found", networkName)
@@ -177,28 +177,29 @@ func Connect(networkName string, containerInfo *container.ContainerInfo) error {
 		return err
 	}
 	// 在容器的 namespace 中配置网络设备的IP地址
-	if err = wheel.ConfigEndpointIpAddressAndRoute(endpoint, containerInfo); err != nil {
+	if err = ConfigEndpointIpAddressAndRoute(endpoint, containerInfo); err != nil {
 		return err
 	}
 	// 配置容器到端口的主机端口的映射
-	return wheel.ConfigPortMapping(endpoint, containerInfo)
+	return ConfigPortMapping(endpoint, containerInfo)
 
 }
 
 func DeleteNetwork(networkName string) error {
+	// 从 dict 中查找网络信息
 	nw, ok := networks[networkName]
 	if !ok {
 		return fmt.Errorf("no Such Network: %s", networkName)
 	}
-
+	// 通过 IPAM 释放网络网关的 IP
 	if err := ipAllocator.Release(nw.IpRange, &nw.IpRange.IP); err != nil {
 		return fmt.Errorf("error Remove Network gateway ip: %s", err)
 	}
-
+	// 调用网络驱动，删除网络创建的设备和配置
 	if err := drivers[nw.Driver].Delete(*nw); err != nil {
 		return fmt.Errorf("error Remove Network DriverError: %s", err)
 	}
-
+	// 从网络的配置目录中，删除该网络的配置文件
 	return nw.remove(defaultNetworkPath)
 }
 

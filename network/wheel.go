@@ -5,7 +5,7 @@
 @Software: GoLand
 */
 
-package wheel
+package network
 
 import (
 	"fmt"
@@ -13,7 +13,6 @@ import (
 	"github.com/vishvananda/netlink"
 	"github.com/vishvananda/netns"
 	"my-container/container"
-	"my-container/network"
 	"net"
 	"os"
 	"os/exec"
@@ -22,7 +21,7 @@ import (
 	"time"
 )
 
-func ConfigEndpointIpAddressAndRoute(ep *network.Endpoint, containerInfo *container.ContainerInfo) error {
+func ConfigEndpointIpAddressAndRoute(ep *Endpoint, containerInfo *container.ContainerInfo) error {
 	peerLink, err := netlink.LinkByName(ep.Device.PeerName)
 	if err != nil {
 		return fmt.Errorf("fail config endpoint: %v", err)
@@ -60,7 +59,7 @@ func ConfigEndpointIpAddressAndRoute(ep *network.Endpoint, containerInfo *contai
 	return nil
 }
 
-func ConfigPortMapping(ep *network.Endpoint, containerInfo *container.ContainerInfo) error {
+func ConfigPortMapping(ep *Endpoint, containerInfo *container.ContainerInfo) error {
 	log.Info("端口映射为：", containerInfo.PortMapping)
 	for _, pm := range ep.PortMapping {
 		portMapping := strings.Split(pm, ":")
