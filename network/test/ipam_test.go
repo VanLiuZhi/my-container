@@ -15,8 +15,9 @@ import (
 )
 
 func TestAllocate(t *testing.T) {
-	cidr, ipNet, _ := net.ParseCIDR("192.168.1.100/24")
+	cidr, ipNet, _ := net.ParseCIDR("192.168.1.200/24")
 	// // 192.168.1.100 192.168.1.0/24
+	ipNet.IP = cidr
 	fmt.Println(cidr.String(), ipNet.String())
 	//
 	size, bits := ipNet.Mask.Size()
