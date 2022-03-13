@@ -53,11 +53,12 @@ func (d *BridgeNetworkDriver) Delete(network Network) error {
 
 func (d *BridgeNetworkDriver) Connect(network *Network, endpoint *Endpoint) error {
 	bridgeName := network.Name
+	// 通过接口名获取到 Linux Bridge 接口的对象和接口属性
 	br, err := netlink.LinkByName(bridgeName)
 	if err != nil {
 		return err
 	}
-
+	// 创建 Veth 接口的配置
 	la := netlink.NewLinkAttrs()
 	la.Name = endpoint.ID[:5]
 	la.MasterIndex = br.Attrs().Index

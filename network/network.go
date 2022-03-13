@@ -159,13 +159,13 @@ func Connect(networkName string, containerInfo *container.ContainerInfo) error {
 	if !ok {
 		return fmt.Errorf("network %s not found", networkName)
 	}
-	// 分配容器IP地址
+	// 从网络的 IP 段中，分配容器IP地址
 	ip, err := ipAllocator.Allocator(network.IpRange)
 	if err != nil {
 		log.Error("调用 Connect, ip 分配失败")
 		return err
 	}
-	// 创建网络端点
+	// 创建网络端点，设置网络端点的 IP、网络和端口映射信息，供下面的配置调用
 	endpoint := &Endpoint{
 		ID:          fmt.Sprintf("%s-%s", containerInfo.Id, networkName),
 		IPAddress:   ip,
@@ -180,7 +180,7 @@ func Connect(networkName string, containerInfo *container.ContainerInfo) error {
 	if err = ConfigEndpointIpAddressAndRoute(endpoint, containerInfo); err != nil {
 		return err
 	}
-	// 配置容器到端口的主机端口的映射
+	// 配置容器到端口的主机端口的映射（通过iptables 做 DNAT）
 	return ConfigPortMapping(endpoint, containerInfo)
 
 }
